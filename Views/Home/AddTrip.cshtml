@@ -1,0 +1,347 @@
+﻿@{
+    ViewData["Title"] = "Добавить поездку";
+}
+@model Journey
+<div class="text-center">
+    <h1 class="display-4">Добавить поездку к путешествию @Model.Title</h1>
+</div>
+<input type="button" value="Сохранить" onclick="saveAll()"/>
+<div class="text-center">
+   <label>Дата</label><input type="date" id="inputDate">
+   <label>Начало</label><input type="time" id="inputStart">
+   <label>Окончание</label><input type="time" id="inputEnd">
+</div>
+<div class="text-center">
+    <input type="text" placeholder="Куда ездили" id="inputWhere" />
+</div>
+<div class="text-center">
+    <h4>Укажите ближайший город и метку</h4>
+    @foreach (var loc in Model.Trips.First(t => t.IsStartTrip).Locations)
+    {
+        @if (loc.City == null)
+        {
+            <label class="label-location" onclick="clickCity(this)" data-countryId="@loc.Country.Id">@loc.Country.Name</label>
+        }
+        else
+        {
+            <label class="label-location" onclick="clickCity(this)" data-countryId="@loc.Country.Id" data-cityId="@loc.City.Id" data-long="@loc.City.Longitude" data-lat="@loc.City.Latitude">@($"{loc.City.Name} ({loc.Country.Name})")</label>
+        }
+    }
+
+</div>
+<div class="text-center">
+    <div id="map"  style="width:100%; height:500px"></div>
+    <input type="button" value="Добавить метку" onclick="addMarker()" />
+</div>
+<div class="text-center">
+    <textarea rows="10" cols="100" placeholder="Описание поездки" id="inputDescription"></textarea>
+</div>
+<div>
+    <h4>Оценки</h4>
+    <table>
+        <tr>
+            <td> <label>Удобство проезда</label></td>
+            <td><img class="star-selected" data-star="1" data-group="road" onmouseenter="starEnter(this)"></img></td>
+            <td> <img class="star-notselected" data-star="2" data-group="road" onmouseenter="starEnter(this)"></img></td>
+            <td> <img class="star-notselected" data-star="3" data-group="road" onmouseenter="starEnter(this)"></img></td>
+            <td> <img class="star-notselected" data-star="4" data-group="road" onmouseenter="starEnter(this)"></img></td>
+            <td> <img class="star-notselected" data-star="5" data-group="road" onmouseenter="starEnter(this)"></img></td>
+            <td> <label class="stars" data-group="road">1/5</label></td>
+        </tr>
+    <tr>
+            <td><label>Растительность</label></td>
+            <td><img class="star-selected" data-star="1" data-group="flora" onmouseenter="starEnter(this)"></img></td>
+            <td> <img class="star-notselected" data-star="2" data-group="flora" onmouseenter="starEnter(this)"></img></td>
+            <td><img class="star-notselected" data-star="3" data-group="flora" onmouseenter="starEnter(this)"></img></td>
+            <td><img class="star-notselected" data-star="4" data-group="flora" onmouseenter="starEnter(this)"></img></td>
+            <td><img class="star-notselected" data-star="5" data-group="flora" onmouseenter="starEnter(this)"></img></td>
+            <td><label class="stars" data-group="flora">1/5</label>
+    </tr>
+        <tr>
+        <td><label>Безопасность</label></td>
+            <td>  <img class="star-selected" data-star="1" data-group="safe" onmouseenter="starEnter(this)"></img></td>
+            <td> <img class="star-notselected" data-star="2" data-group="safe" onmouseenter="starEnter(this)"></img></td>
+            <td> <img class="star-notselected" data-star="3" data-group="safe" onmouseenter="starEnter(this)"></img></td>
+            <td> <img class="star-notselected" data-star="4" data-group="safe" onmouseenter="starEnter(this)"></img></td>
+            <td> <img class="star-notselected" data-star="5" data-group="safe" onmouseenter="starEnter(this)"></img></td>
+            <td><label class="stars" data-group="safe">1/5</label></td>
+    </tr>
+        <tr>
+            <td><label>Общие впечатления</label></td>
+            <td> <img class="star-selected" data-star="1" data-group="summ" onmouseenter="starEnter(this)"></img></td>
+            <td>  <img class="star-notselected" data-star="2" data-group="summ" onmouseenter="starEnter(this)"></img></td>
+            <td>   <img class="star-notselected" data-star="3" data-group="summ" onmouseenter="starEnter(this)"></img></td>
+            <td>   <img class="star-notselected" data-star="4" data-group="summ" onmouseenter="starEnter(this)"></img></td>
+            <td>   <img class="star-notselected" data-star="5" data-group="summ" onmouseenter="starEnter(this)"></img></td>
+            <td>   <label class="stars" data-group="summ">1/5</label></td>
+    </tr>
+    <tr>
+            <td><label>Средняя оценка</label></td>
+            <td colspan="5"><label class="stars" data-group="result">1/5</label></td>
+    </tr>
+    </table>
+</div>
+<div class="text-center">
+    <label>Загрузка фотографий</label><input type="file" multiple/>
+</div>
+<div id="imglist" class="text-center">
+    <h4>Загруженные фотографии</h4>
+</div>
+<div class="text-center">
+    <h4>Затраты</h4>
+    </br>
+    <table id="expensesTable">
+        <tr>
+            <td>
+                <input type="text" placeholder="На что потрачено" list="expensesList" id="inputExpensesType">
+                <datalist id="expensesList">
+                    <option>Еда</option>
+                    <option>Завтрак</option>
+                    <option>Обед</option>
+                    <option>Ужин</option>
+                    <option>Развлечения</option>
+                    <option>Проезд</option>
+                    <option>Покупки</option>
+                    <option>Одежда</option>
+                    <option>Лекарства</option>
+                </datalist>
+            </td>
+            <td>
+                <input type="number" placeholder="Сумма" step="100" id="inputExpenses" />
+            </td>
+            <td>
+                <input type="text" placeholder="Валюта" list="currencyList" id="inputCurrency" />
+                <datalist id="currencyList">
+                    <option>Рубли</option>
+                    <option>Доллары</option>
+                    <option>Евро</option>
+                </datalist>
+            </td>
+            <td>
+                <input type="button" value="Добавить траты" onclick="addExpenses()">
+            </td>
+        </tr>
+    </table> 
+</div>
+<script>
+    var journeyId = @Model.Id;
+    var allExpenses = [];
+    class Expenses {
+        Type;
+        Value;
+        Currency;
+        constructor(type, value, currency) {
+            this.Type = type; this.Value = value; this.Currency = currency;
+        }
+    }
+    function addExpenses() {
+        var expensesTypes = $("#inputExpensesType").val();
+        if (expensesTypes.length == 0) { alert("Укажите, на что была трата"); return; }
+        var expenses = $("#inputExpenses").val();
+        if (expenses.length == 0) { alert("Укажите сумму траты"); return; }
+        var currency = $("#inputCurrency").val();
+        if (currency.length == 0) { alert("Укажите валюту траты"); return; }
+        expenses = Math.round(parseFloat(expenses) * 100) / 100;
+        var oneExpenses = new Expenses(expensesTypes, expenses, currency);
+        allExpenses.push(oneExpenses);
+        $('#expensesTable').append(`<tr><td><label>${expensesTypes}</label></td><td><label>${expenses}</label></td><td><label>${currency}</label></td></tr>`)
+        //$("#expensesResult").html(a.getExpensesHtml());
+        $("#inputExpensesType").val("");
+        $("#inputExpenses").val("");
+    }
+    class MarkerContainer{
+        Lat;
+        Long;
+        Zoom;
+        Country;
+        City;
+    }
+    var map;
+    var marker=null;
+    var markers = [];
+   
+    var curLong = parseFloat(@ViewData["StartLong"]);
+    var curLat = parseFloat(@ViewData["StartLat"]);
+    var curCountryId=@ViewData["StartCountry"];
+    var curCityId=@ViewData["StartCity"];
+
+   /* var curLong = 0;
+    var curLat = 0*/
+    DG.then(function () {
+            map = DG.map('map', {
+            center: [curLat, curLong],
+                zoom: 14
+            });
+            addMarker();
+        });
+    function AddMarkerContainer()
+    {
+        if (marker) {
+            var cont = new MarkerContainer();
+            var latlong = marker.getLatLng();
+            cont.Lat = latlong.lat;
+            cont.Long = latlong.lng;
+            cont.Zoom = map.getZoom();
+            cont.Country = curCountryId;
+            cont.City = curCityId;
+            markers.push(cont);
+            marker.dragging.disable();
+        }
+    }
+    function addMarker() {
+        AddMarkerContainer();
+        marker = DG.marker([curLat, curLong], {
+            draggable: true
+        })
+        .addTo(map)
+        .bindLabel((markers.length+1).toString(), {
+            static: true
+        });
+
+        marker.on('drag', function (e) {
+            var lat = e.target._latlng.lat.toFixed(3),
+                lng = e.target._latlng.lng.toFixed(3);
+
+            //locationInfo.innerHTML = lat + ', ' + lng;
+        });
+        //markers.push(marker);
+    }
+    function clickCity(label)
+    {
+        var long = label.getAttribute("data-long");
+        var lat = label.getAttribute("data-lat");
+        curCountryId=label.getAttribute("data-countryId");
+        var cityId=label.getAttribute("data-cityId");
+        if (lat) {
+            curLong = parseFloat(long.replace(',', '.'));
+            curLat = parseFloat(lat.replace(',', '.'));
+            marker.setLatLng([curLat, curLong]);
+            map.setView([curLat, curLong], 14);
+            curCityId=cityId;
+        }
+        else {
+            curLong = 0; curLat = 0;
+            marker.setLatLng([0, 0]);
+            map.setView([0, 0], 1);
+            curCityId=0;
+        }
+    }
+    var starRoad = 1;
+    var starFlora = 1;
+    var starSafe = 1;
+    var starSumm = 1;
+    function starEnter(element) { 
+        
+        var star = element.getAttribute("data-star");
+        var group = element.getAttribute("data-group");
+        $(`label[data-group='${group}']`).text(`${star}/5`);
+        if (group === "road") starRoad = Number(star);
+        if (group === "flora") starFlora = Number(star);
+        if (group === "safe") starSafe = Number(star);
+        if (group === "summ") starSumm = Number(star);
+        var result = Math.round((starRoad + starFlora + starSafe + starSumm) / 4 * 10) / 10;
+        $(`label[data-group='result']`).text(`${result}/5`);
+        if (star == 1) {
+            RemoveStar("2", group);
+            RemoveStar("3", group);
+            RemoveStar("4", group);
+            RemoveStar("5", group);
+        }
+        //alert(star);
+        else if (star==2)
+        {
+            SetStar("2", group);
+            RemoveStar("3", group);
+            RemoveStar("4", group);
+            RemoveStar("5", group);
+        }
+        else if (star == 3) {
+            SetStar("2", group);
+            SetStar("3", group);
+            RemoveStar("4", group);
+            RemoveStar("5", group);
+        }
+        else if (star == 4) {
+            SetStar("2", group);
+            SetStar("3", group);
+            SetStar("4", group);
+            RemoveStar("5", group);
+        }
+        else if (star == 5) {
+            SetStar("2", group);
+            SetStar("3", group);
+            SetStar("4", group);
+            SetStar("5", group);
+        }
+}
+    function SetStar(selector, group) { 
+        //alert(selector);
+        //alert(group);
+        //alert($(`[data-star='${selector}'][data-group='${group}']`).length);
+        $(`[data-group='${group}'][data-star='${selector}']`).removeClass('star-notselected');
+        $(`[data-group='${group}'][data-star='${selector}']`).addClass('star-selected');
+    }
+    function RemoveStar(selector, group) {
+        $(`[data-group='${group}'][data-star='${selector}']`).removeClass('star-selected');
+        $(`[data-group='${group}'][data-star='${selector}']`).addClass('star-notselected');
+    }
+    function saveAll(){
+        var date = $("#inputDate").val();   
+        if (!date) { alert("Укажите дату поездки"); return; }
+        var start = $("#inputStart").val();
+        if (!start) { alert("Укажите время начала поездки"); return; }
+        var end = $("#inputEnd").val();
+        if (!end) { alert("Укажите время окончания поездки"); return; }
+        var where = $("#inputWhere").val();
+        if (!where) { alert("Укажите куда ездили"); return; }
+        var description = $("#inputDescription").val();
+        if (!description) { alert("Укажите хотя бы пару слов о поездке"); return; }
+        formData.append("date", date);
+        formData.append("start", start);
+        formData.append("end", end);
+        formData.append("where", where);
+        formData.append("description", description);
+        formData.append("starRoad", starRoad);
+        formData.append("starFlora", starFlora);
+        formData.append("starSafe", starSafe);
+        formData.append("starSumm", starSumm);
+        formData.append("journeyId", journeyId);
+        for (var i = 0; i < allExpenses.length; i++) {
+            formData.append(`spentType${i}`, allExpenses[i].Type);
+            formData.append(`spentVal${i}`, allExpenses[i].Value);
+            formData.append(`spentCurr${i}`, allExpenses[i].Currency);
+        }
+
+        AddMarkerContainer();
+        for (var i = 0; i < markers.length; i++)
+        {
+            formData.append(`markLat${i}`, markers[i].Lat);
+            formData.append(`markLong${i}`, markers[i].Long);
+            formData.append(`markZoom${i}`, markers[i].Zoom);
+            formData.append(`markCountry${i}`, markers[i].Country);
+            formData.append(`markCity${i}`, markers[i].City);
+        }
+        $.ajax({
+            url: "/Home/LoadPhotos",
+            type: "POST",
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function (response) { alert("Поездка загружена!"); document.replace("/Home/MyJourneys"); }
+        });
+    }
+    var imgCount = 0;
+    var formData = new FormData();
+    document.querySelector('input[type="file"]').onchange = event => {
+        //let reader = new FileReader();
+        for (var i = 0; i < event.target.files.length; i++) {
+            imgCount++;
+            let reader = new FileReader();
+            reader.Counter = imgCount;
+            $("#imglist").append(`<img id="img${imgCount}" class="photo"/>`);
+            reader.onload = e => document.querySelector(`#img${e.currentTarget.Counter}`).src = e.target.result;
+            reader.readAsDataURL(event.target.files[i]);
+            formData.append(`img${imgCount}`, event.target.files[i]);
+        }
+    };
+</script>

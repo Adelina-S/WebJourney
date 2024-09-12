@@ -1,0 +1,129 @@
+﻿@{
+    ViewData["Title"] = "Информация о путешествии";
+}
+@model Journey
+<div class="text-center">
+    <h1 class="display-4">@Model.Title</h1>
+</div>
+<div id="map"  style="width:100%; height:500px"></div>
+@foreach (var trip in @Model.Trips)
+{
+    @if (trip.IsStartTrip)
+    {
+        <input type="hidden" data-startId="@trip.Id"/>
+    }
+    else
+    {
+        <div class="trip-info" onclick="classToggle(this)" data-tripId="@trip.Id">
+            <h2>@trip.Title</h2>
+            <label>Дата: @trip.StartTime.ToString("dd-MM-yyyy") @($"{trip.StartTime.ToString("HH:mm")}-{trip.EndTime.ToString("HH:mm")}")</label>
+            <br/>
+            <h5>Описание путешествия</h5>
+            <label style="{width: 400px}">@trip.Description</label>
+            <br/>
+            <h5>Оценки</h5>
+            <div>
+                @foreach (var mark in trip.Ratings)
+                {
+                    <label>@($"{mark.Name}: {mark.Mark}")</label>
+                }
+            </div>
+            @if (trip.Expenses.Count>0)
+            {
+                <h5>Затраты</h5>
+                <table>
+                    @foreach (var expense in trip.Expenses)
+                    {
+                        <tr>
+                            <td>@expense.Name</td>
+                            <td>@expense.Value</td>
+                            <td>@expense.Currency</td>
+                        </tr>   
+                    }
+                </table>
+            }
+            <h5>Фотографии</h5>
+            <div>
+                @foreach (var photo in trip.Photos)
+                {
+                    <img src="/Home/ShowPhoto/@photo.Id" alt="" style="max-width: 400px; border: 2px solid black;" />
+                }
+            </div>
+        </div>
+    }
+}
+<script>
+    var startMarks=null;
+    var curMarkers=null;
+    var map;
+      DG.then(async function () {
+           var markers = DG.featureGroup(), coordinates = [];
+            map = DG.map('map', {
+            center: [0, 0],
+                zoom: 0
+            });
+            var startId=$("input[data-startId]").attr("data-startId");
+            startMarks = await getMarks(startId);
+            placeMarks(startMarks);
+           // alert(m);
+          /* for (var i = 0; i < startMarks.length; i++) {
+                coordinates[0] = startMarks[i][0];
+                coordinates[1] = startMarks[i][1];
+                DG.marker(coordinates).addTo(markers);
+            }
+             markers.addTo(map);
+             map.fitBounds(markers.getBounds());*/
+        });
+        function placeMarks(array)
+        {
+            if (curMarkers)
+                curMarkers.removeFrom(map);
+            var markers = DG.featureGroup(), coordinates = [];
+            for (var i = 0; i < array.length; i++) {
+                coordinates[0] = array[i][0];
+                coordinates[1] = array[i][1];
+                DG.marker(coordinates).addTo(markers);
+            }
+             markers.addTo(map);
+             map.fitBounds(markers.getBounds());
+             curMarkers=markers;
+        }
+var selectedDiv=null;
+ async  function classToggle(element) {
+        if (selectedDiv===element)
+        {
+            element.classList.remove('trip-info-active');
+            selectedDiv=null;
+                placeMarks(startMarks);
+            //$("#map").attr("hidden","hidden");
+        }
+        else
+        {
+            if (selectedDiv)
+                selectedDiv.classList.remove('trip-info-active');
+            else
+                $("#map").removeAttr("hidden");
+            element.classList.add('trip-info-active');
+            selectedDiv=element;
+            var tripId=element.getAttribute("data-tripId");
+            var array = await getMarks(tripId);
+            placeMarks(array);
+        }
+
+//  element.classList.toggle('trip-info-active');
+}
+async function getMarks(tripId)
+{
+    var result=[];
+    await $.post('/Home/GetMarks', { 'tripId': tripId },
+            function (data) {
+                var arr = JSON.parse(data);
+                result=[];
+                for(var i=0;i<arr.length;i++)
+                {
+                    result.push([arr[i][1],arr[i][2]]);
+                }
+            });
+    return result;
+}
+</script>

@@ -1,0 +1,237 @@
+﻿@{
+    ViewData["Title"] = "Новое путешествие";
+}
+
+<div class="text-center">
+    <h1 class="display-4">Регистрация нового путешествия</h1>
+</div>
+<div class="text-center">
+    <table>
+        <tr>
+            <td class="journey">
+                <div class="text-center">
+                    <h3 id="resultTitle"></h3>
+                </div>
+                <div id="locations">
+                </div>
+                <div id="expensesResult">
+
+                </div>
+            </td>
+            <td class="journey">
+                <div class="text-center">
+                    <h3>Настройка начальной информации о путешествии</h3>
+                </div>
+                <div class="text-center">
+                    <input type="text" placeholder="Название путешествия" id="journeyTitle" oninput="inputTitle(this)">
+                </div>
+                <div class="text-center">
+                    <input list="countries" autocomplete="off" oninput="changeCountry(this)" id="inputCountry" placeholder="Страны">
+                    <datalist id="countries">
+                    </datalist>
+                    </br>
+                    <input list="cities" id="inputCity">
+                    <datalist id="cities">
+                    </datalist>
+                    <input type="button" value="Добавить" onclick="addCountryOrCity()" />
+                </div>
+                <div class="text-center">
+                    <label>Начальные затраты</label>
+                    </br>
+                    <input type="text" placeholder="На что потрачено" list="expensesList" id="inputExpensesType">
+                    <datalist id="expensesList">
+                        <option>Перелёт</option>
+                        <option>Проезд</option>
+                        <option>Визы</option>
+                        <option>Одежда</option>
+                        <option>Лекарства</option>
+                    </datalist>
+                    <br />
+                    <input type="number" placeholder="Сумма" step="100" id="inputExpenses"/>
+                    <input type="text" placeholder="Валюта" list="currencyList" id="inputCurrency"/>
+                    <datalist id="currencyList">
+                        <option>Рубли</option>
+                        <option>Доллары</option>
+                        <option>Евро</option>
+                    </datalist>
+                    <br />
+                    <input type="button" value="Добавить траты" onclick="addExpenses()">
+                </div>
+            </td>
+        </tr>
+    </table>
+</div>
+
+
+
+<div class="text-center">
+    <input type="button" value="Сохранить" onclick="SaveJourney()" />
+</div>
+<script>
+    document.addEventListener("DOMContentLoaded", ReloadCountries);
+    function ReloadCountries() {
+        $.post('/Home/GetCountriesList', {}, function (data) { $("#countries").html(data); });
+    }
+    function inputTitle(input)
+    {
+        $("#resultTitle").text(input.value);
+    }
+    function addExpenses()
+    {
+        var expensesTypes = $("#inputExpensesType").val();
+        if (expensesTypes.length == 0) { alert("Укажите, на что была трата"); return; }
+        var expenses = $("#inputExpenses").val();
+        if (expenses.length == 0) { alert("Укажите сумму траты"); return; }
+        var currency = $("#inputCurrency").val();
+        if (currency.length == 0) { alert("Укажите валюту траты"); return; }
+        expenses = Math.round(parseFloat(expenses) * 100) / 100;
+        a.addExpenses(expensesTypes, expenses, currency);
+        $("#expensesResult").html(a.getExpensesHtml());
+        $("#inputExpensesType").val("");
+        $("#inputExpenses").val("");
+    }
+    function SaveJourney()
+    {
+        var title = $("#journeyTitle").val();
+        if (title.length==0) 
+        {
+            alert("Укажите название путешествия"); return;
+        }
+        if (a.Items.length == 0) { 
+            alert("Укажите хотя бы один город или страну путешествия"); return;
+        }
+        a.Title = title;
+        $.post('/Home/AddJourney', { 'json': JSON.stringify(a) }, function (data) {
+            if (data.length == 0) {
+                alert("Путешествие начато!"); location.reload();
+            }
+            else {
+                alert(data);
+            }
+        });
+    }
+    class AddedCity {
+        Country;
+        CountryId;
+        City = null;
+        CityId = null;
+        constructor(country, countryId) {
+            this.Country = country;
+            this.CountryId = countryId;
+        }
+    /*    getLabel()
+        {
+            if (!this.City)
+                return `<label class="label-location">${this.Country}</label></br>`;
+            else
+                return `<label class="label-location">${this.Country}</label>--<label class="label-location">${this.City}</label></br>`;
+        }*/
+    }
+    class Expenses {
+        Type;
+        Value;
+        Currency;
+        constructor(type, value, currency)
+        {
+            this.Type = type; this.Value = value; this.Currency = currency;
+        }
+    }
+    class Journey {
+        Title;
+        Items = [];
+        Expenses = [];
+        addItem(item) {
+            for (var i = 0; i < this.Items.length; i++) {
+                if (!item.CityId) {
+                    if (this.Items[i].CountryId === item.CountryId) return false;
+                }
+                else if (this.Items[i].CountryId === item.CountryId && this.Items[i].CityId === item.CityId) return false;
+            }
+            this.Items.push(item);
+            return true;
+        }
+        getItemsHtml() { 
+            var result = "<label>Запланированные города и страны:</label></br>";
+            for (var i = 0; i < this.Items.length; i++) {
+                if (!this.Items[i].City)
+                    result+=`<label class="label-location">${this.Items[i].Country}</label></br>`;
+                else
+                    result += `<label class="label-location">${this.Items[i].Country}</label>--<label class="label-location">${this.Items[i].City}</label></br>`;
+            }
+            return result;
+        }
+        addExpenses(type, value, currency) {
+            for (var i = 0; i < this.Expenses.length;i++)
+            {
+                if (type === this.Expenses[i].Type) {
+                    this.Expenses[i].Value = value; this.Expenses[i].Currency = currency;
+                    return;
+                }
+            }
+            var expenses = new Expenses(type, value, currency);
+            this.Expenses.push(expenses);
+        }
+        getExpensesHtml()
+        {
+            var result = "<label>Начальные траты:</label></br>";
+            for (var i = 0; i < this.Expenses.length; i++)
+            {
+                result += `<label>${this.Expenses[i].Type}: ${this.Expenses[i].Value} ${this.Expenses[i].Currency}</label></br>`;
+            }
+            return result;
+        }
+    }
+    a = new Journey();
+    function addCountryOrCity() {
+        var selectCountry = $('#inputCountry').val();
+        var countryOption = $(`option[data-countryName="${selectCountry}"]`, "datalist#countries");
+        if (countryOption.length == 0) {alert("Выберите страну"); return;}
+        var countryId = countryOption.attr("data-countryId");
+        var added = new AddedCity(selectCountry, countryId);
+        var selectCity = $('#inputCity').val();
+        var cityOption = $(`option[data-cityName="${selectCity}"]`, "datalist#cities");
+        if (cityOption.length != 0) { var cityId = cityOption.attr("data-cityId"); added.City = selectCity; added.CityId = cityId; }
+        var addResult = a.addItem(added);
+        if (addResult) {
+            $("#locations").html(a.getItemsHtml());
+            //$('#locations').append(added.getLabel());
+            $('#inputCountry').val('');
+            $('#inputCity').val('');
+        }
+        else { 
+            alert("Такое местоположение уже отмечено");
+        }
+
+        //$('#locations').append(`<label>${added.Country}</label>`);
+        //alert(`${added.Country} ${added.CountryId} ${added.City} ${added.CityId}`);
+    }
+    function changeCountry(input)
+    {
+        var val = input.value;
+        if (val.length != 0) {
+            var countryOption = $(`option[data-countryName="${val}"]`, "datalist#countries");
+            //var countryOption = $(`option[value="${val}"]`, "datalist#countries");
+            //var countryOption = $(`#countries>option:contains(${val})`);
+            if (countryOption.length == 0) {
+                ClearCities(); return;
+            }
+            var countryId = countryOption.attr('data-countryId');
+            ReloadCities(countryId);
+        }
+        else ClearCities();
+    }
+    function ClearCities()
+    {
+        document.getElementById('inputCity').placeholder = "Страна не выбрана";
+        $("#cities").html('');
+    }
+    function ReloadCities(countryId) {
+        $.post('/Home/GetCitiesList', { 'countryId': countryId }, function (data) {
+            $("#cities").html(data); 
+            document.getElementById('inputCity').placeholder = "Выбрать город";
+            //var nullCityOption = $(`option[data-cityId="0"]`, "datalist#cities");
+            //alert(nullCityOption.text());
+            //document.getElementById('inputCity').value = nullCityOption.text();
+        });
+    }
+</script>

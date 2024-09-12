@@ -1,0 +1,64 @@
+﻿@{
+    ViewData["Title"] = "Мои путешествия";
+}
+@model List<Journey>
+<div class="text-center">
+    <h1 class="display-4">Мои путешествия</h1>
+</div>
+<div class="text-center">
+    <table class="table-bordered">
+        @for (int i = 0; i < Model.Count;)
+        {
+            <tr>
+                @for (int j = 0; j < 2; j++, i++)
+                {
+                    <td class="book">
+                        @if (Model.Count > i)
+                        {
+                            <h3>@Model[i].Title</h3>
+                            {
+                                var startTrip = Model[i].Trips.First(t => t.IsStartTrip);
+                            
+                            if (startTrip.Locations.Count > 0)
+                            {
+                                <div>
+                                    <label>Запланированные города и страны: </label>
+                                    @foreach (var loc in startTrip.Locations)
+                                    {
+                                        @if (loc.City == null)
+                                        {
+                                            <label class="label-location">@loc.Country.Name</label>
+                                        }
+                                        else
+                                        {
+                                            <label class="label-location">@($"{loc.City.Name} ({loc.Country.Name})")</label>
+                                        }
+                                    }
+                                </div>
+                            }
+                            <label>Добавлено поездок: @Model[i].AddedTrips</label><br />
+                            <label>Потрачено средств: </label>
+                                @foreach (var item in Model[i].TotalSpents)
+                                    {
+                                        <label>@item.Key @item.Value</label>
+                                    }
+                            }
+                            <br/>
+                            <label>Добавлено меток: @Model[i].VisitedMarks</label><br/>
+                            <label>Добавлено фотографий: @Model[i].TotalPhotos</label><br/>
+                            <label>Средняя оценка: @Model[i].AverageRating</label><br/>
+                            <div>
+                                <input type="button" value="Добавить поездку" onclick="document.location='/Home/AddTrip?journeyId=@Model[i].Id'">
+                                <input type="button" value="Посмотреть путешествие" onclick="document.location='/Home/ShowJourney?journeyId=@Model[i].Id'">
+                            </div>
+                        }
+                        else
+                        {
+
+                        }
+                    </td>
+                }
+            </tr>
+        }
+    </table>
+</div>
