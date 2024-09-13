@@ -19,7 +19,7 @@ namespace WebJourney.DAO
         public ApplicationContext()
         {
             //Database.EnsureDeleted();
-            Database.EnsureCreated();
+             Database.EnsureCreated();
         }
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
@@ -27,14 +27,14 @@ namespace WebJourney.DAO
         }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            User adelina = new User("Adelina", "Synergy", "Аделина") { Id = 1};
+           /* User adelina = new User("Adelina", "Synergy", "Аделина") { Id = 1};
             User jack = new User("Jack", "123", "Евгений") { Id = 2 };
             User vika = new User("Vika", "123", "Виктория") { Id = 3 };
             modelBuilder.Entity<User>().HasData(new User[] { adelina, jack, vika });
             var countries = LoadCountries();
             modelBuilder.Entity<Country>().HasData(countries);
             var cities = LoadCities(3159);
-             modelBuilder.Entity<City>().HasData(cities);
+             modelBuilder.Entity<City>().HasData(cities);*/
 
             modelBuilder.Entity<City>().Navigation(t => t.Country).AutoInclude();
             modelBuilder.Entity<Location>().Navigation(t=>t.Country).AutoInclude();
